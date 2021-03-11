@@ -282,7 +282,7 @@ We should see **output** of all the documents in the `flights` collection:
 
 #### Pretty-ing Output
 
-You can append or chain the `pretty()` function to make the results returned by the `find()` function more readable:
+You can append or "chain" the `pretty()` function to make the results returned by the `find()` function more readable:
 
 ```
 db.collection.find().pretty()
@@ -350,7 +350,7 @@ Output:
 }
 ```
 
-> The `pretty()` command can be used in any function that will return one or more documents.
+> The `pretty()` command can be used in any function that returns a _cursor_.
 
 ### Changing Document Information (Update)
 
