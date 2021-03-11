@@ -518,3 +518,396 @@ In MongoDB, we have the following utility functions to execute these operations:
 **Commands are always invoked on the `db` object** - In order for any of the above function to execute any of the CRUD operations, we must specify (using dot notation) the `db` and collection upon which the functions should be invoked. ( e.g `db.collection.function(args)`)
 
 **Making output more readable** - With any of the Mongo functions above, we can append the `pretty()` function to format the output such that is easier to parse and consume by a human-being.
+
+## Cursors
+
+As collections get larger and contain an increasing number of documents, returning all the documents in a single function may not be the desired result. Since a `find()` command could match 1, 10, 100, 1000, or 1,000,000 documents - it doesn't technically return the documents in an array (which is how we inserted them into the database), instead it uses a _cursor_.
+
+> Looking back to the results of `db.flights.find()` , notice there are no square brackets (`[]`) or commas (`,`) in the documents that are printed to the screen. This is because MongoDB didn't return an array of documents, rather it returned a _cursor_ object representing the matching documents.
+
+**Cursors** are objects returned from the `find()` operation that contain the matching documents. With _cursors_ the returned results can be cycled through, providing a sort of pagination functionality.
+
+To see this in action, let's enter more documents. For this example, we will create a collection called `passengers` and alongside the `flights` collection.
+
+Input:
+
+```
+db.passengers.insertMany([
+   {
+     "name": "Max Schwarzmueller",
+     "age": 29
+   },
+   {
+     "name": "Manu Lorenz",
+     "age": 30
+   },
+   {
+     "name": "Chris Hayton",
+     "age": 35
+   },
+   {
+     "name": "Sandeep Kumar",
+     "age": 28
+   },
+   {
+     "name": "Maria Jones",
+     "age": 30
+   },
+   {
+     "name": "Alexandra Maier",
+     "age": 27
+   },
+   {
+     "name": "Dr. Phil Evans",
+     "age": 47
+   },
+   {
+     "name": "Sandra Brugge",
+     "age": 33
+   },
+   {
+     "name": "Elisabeth Mayr",
+     "age": 29
+   },
+   {
+     "name": "Frank Cube",
+     "age": 41
+   },
+   {
+     "name": "Karandeep Alun",
+     "age": 48
+   },
+   {
+     "name": "Michaela Drayer",
+     "age": 39
+   },
+   {
+     "name": "Bernd Hoftstadt",
+     "age": 22
+   },
+   {
+     "name": "Scott Tolib",
+     "age": 44
+   },
+   {
+     "name": "Freddy Melver",
+     "age": 41
+   },
+   {
+     "name": "Alexis Bohed",
+     "age": 35
+   },
+   {
+     "name": "Melanie Palace",
+     "age": 27
+   },
+   {
+     "name": "Armin Glutch",
+     "age": 35
+   },
+   {
+     "name": "Klaus Arber",
+     "age": 53
+   },
+   {
+     "name": "Albert Twostone",
+     "age": 68
+   },
+   {
+     "name": "Gordon Black",
+     "age": 38
+   }
+ ]
+ )
+```
+
+Executed successfully will produce the following:
+
+```
+{
+	"acknowledged" : true,
+	"insertedIds" : [
+		ObjectId("604a65c63918215ca022eed6"),
+		ObjectId("604a65c63918215ca022eed7"),
+		ObjectId("604a65c63918215ca022eed8"),
+		ObjectId("604a65c63918215ca022eed9"),
+		ObjectId("604a65c63918215ca022eeda"),
+		ObjectId("604a65c63918215ca022eedb"),
+		ObjectId("604a65c63918215ca022eedc"),
+		ObjectId("604a65c63918215ca022eedd"),
+		ObjectId("604a65c63918215ca022eede"),
+		ObjectId("604a65c63918215ca022eedf"),
+		ObjectId("604a65c63918215ca022eee0"),
+		ObjectId("604a65c63918215ca022eee1"),
+		ObjectId("604a65c63918215ca022eee2"),
+		ObjectId("604a65c63918215ca022eee3"),
+		ObjectId("604a65c63918215ca022eee4"),
+		ObjectId("604a65c63918215ca022eee5"),
+		ObjectId("604a65c63918215ca022eee6"),
+		ObjectId("604a65c63918215ca022eee7"),
+		ObjectId("604a65c63918215ca022eee8"),
+		ObjectId("604a65c63918215ca022eee9"),
+		ObjectId("604a65c63918215ca022eeea")
+	]
+}
+```
+
+This should work regardless of whether or not the `passengers` collection exists. If it already exists the `insertMany()` operation will simply add the records to the collection, however if it doesn't exist, the mongo shell should automatically create the collection and insert the records.
+
+It should also be noted that the `insertMany()` operation inserts each document _in the same order_ that it was entered/executed.
+
+Now calling `db.passengers.find().pretty()` will execute a wild-card query on the `passengers` collection in the database and should produce the output:
+
+```
+{
+	"_id" : ObjectId("604a65c63918215ca022eed6"),
+	"name" : "Max Schwarzmueller",
+	"age" : 29
+}
+{
+	"_id" : ObjectId("604a65c63918215ca022eed7"),
+	"name" : "Manu Lorenz",
+	"age" : 30
+}
+{
+	"_id" : ObjectId("604a65c63918215ca022eed8"),
+	"name" : "Chris Hayton",
+	"age" : 35
+}
+{
+	"_id" : ObjectId("604a65c63918215ca022eed9"),
+	"name" : "Sandeep Kumar",
+	"age" : 28
+}
+{
+	"_id" : ObjectId("604a65c63918215ca022eeda"),
+	"name" : "Maria Jones",
+	"age" : 30
+}
+{
+	"_id" : ObjectId("604a65c63918215ca022eedb"),
+	"name" : "Alexandra Maier",
+	"age" : 27
+}
+{
+	"_id" : ObjectId("604a65c63918215ca022eedc"),
+	"name" : "Dr. Phil Evans",
+	"age" : 47
+}
+{
+	"_id" : ObjectId("604a65c63918215ca022eedd"),
+	"name" : "Sandra Brugge",
+	"age" : 33
+}
+{
+	"_id" : ObjectId("604a65c63918215ca022eede"),
+	"name" : "Elisabeth Mayr",
+	"age" : 29
+}
+{
+	"_id" : ObjectId("604a65c63918215ca022eedf"),
+	"name" : "Frank Cube",
+	"age" : 41
+}
+{
+	"_id" : ObjectId("604a65c63918215ca022eee0"),
+	"name" : "Karandeep Alun",
+	"age" : 48
+}
+{
+	"_id" : ObjectId("604a65c63918215ca022eee1"),
+	"name" : "Michaela Drayer",
+	"age" : 39
+}
+{
+	"_id" : ObjectId("604a65c63918215ca022eee2"),
+	"name" : "Bernd Hoftstadt",
+	"age" : 22
+}
+{
+	"_id" : ObjectId("604a65c63918215ca022eee3"),
+	"name" : "Scott Tolib",
+	"age" : 44
+}
+{
+	"_id" : ObjectId("604a65c63918215ca022eee4"),
+	"name" : "Freddy Melver",
+	"age" : 41
+}
+{
+	"_id" : ObjectId("604a65c63918215ca022eee5"),
+	"name" : "Alexis Bohed",
+	"age" : 35
+}
+{
+	"_id" : ObjectId("604a65c63918215ca022eee6"),
+	"name" : "Melanie Palace",
+	"age" : 27
+}
+{
+	"_id" : ObjectId("604a65c63918215ca022eee7"),
+	"name" : "Armin Glutch",
+	"age" : 35
+}
+{
+	"_id" : ObjectId("604a65c63918215ca022eee8"),
+	"name" : "Klaus Arber",
+	"age" : 53
+}
+{
+	"_id" : ObjectId("604a65c63918215ca022eee9"),
+	"name" : "Albert Twostone",
+	"age" : 68
+}
+Type "it" for more
+```
+
+There's a few things to notice here:
+
+1. Notice that the documents printed out are not delimited with commas (`,`). They are also not wrapped in square brackets (`[]`). That is because the actual return value is not an array of documents, but rather a _cursor_ object.
+2. While the query did technically return all the documents within the collection, the output does not contain all the documents. Notice the last document in the output pertains to `"Albert Twostone"`, but the array of documents we provided in the `insertMany()` operation ended with a passenger whose `{"name": "Gordon Black"}`.
+3. In order to get the next set of documents we can the `it` command, which will append output with the final record. However if there number of documents in the result set had more than `20` additional documents, we would need to keep using the `it` command to cycle through all the documents in the result set.
+
+### Cursor functions - `toArray()`
+
+In the event that working with the documents in the result set requires that the dcouments be arranged within a data structure like an array, appending the `toArray()` function to the `find()` function, will return an the matching documents as an array.
+
+Command:
+
+```
+db.passengers.find().toArray()
+```
+
+Output:
+
+```
+[
+	{
+		"_id" : ObjectId("604a65c63918215ca022eed6"),
+		"name" : "Max Schwarzmueller",
+		"age" : 29
+	},
+	{
+		"_id" : ObjectId("604a65c63918215ca022eed7"),
+		"name" : "Manu Lorenz",
+		"age" : 30
+	},
+	{
+		"_id" : ObjectId("604a65c63918215ca022eed8"),
+		"name" : "Chris Hayton",
+		"age" : 35
+	},
+	{
+		"_id" : ObjectId("604a65c63918215ca022eed9"),
+		"name" : "Sandeep Kumar",
+		"age" : 28
+	},
+	{
+		"_id" : ObjectId("604a65c63918215ca022eeda"),
+		"name" : "Maria Jones",
+		"age" : 30
+	},
+	{
+		"_id" : ObjectId("604a65c63918215ca022eedb"),
+		"name" : "Alexandra Maier",
+		"age" : 27
+	},
+	{
+		"_id" : ObjectId("604a65c63918215ca022eedc"),
+		"name" : "Dr. Phil Evans",
+		"age" : 47
+	},
+	{
+		"_id" : ObjectId("604a65c63918215ca022eedd"),
+		"name" : "Sandra Brugge",
+		"age" : 33
+	},
+	{
+		"_id" : ObjectId("604a65c63918215ca022eede"),
+		"name" : "Elisabeth Mayr",
+		"age" : 29
+	},
+	{
+		"_id" : ObjectId("604a65c63918215ca022eedf"),
+		"name" : "Frank Cube",
+		"age" : 41
+	},
+	{
+		"_id" : ObjectId("604a65c63918215ca022eee0"),
+		"name" : "Karandeep Alun",
+		"age" : 48
+	},
+	{
+		"_id" : ObjectId("604a65c63918215ca022eee1"),
+		"name" : "Michaela Drayer",
+		"age" : 39
+	},
+	{
+		"_id" : ObjectId("604a65c63918215ca022eee2"),
+		"name" : "Bernd Hoftstadt",
+		"age" : 22
+	},
+	{
+		"_id" : ObjectId("604a65c63918215ca022eee3"),
+		"name" : "Scott Tolib",
+		"age" : 44
+	},
+	{
+		"_id" : ObjectId("604a65c63918215ca022eee4"),
+		"name" : "Freddy Melver",
+		"age" : 41
+	},
+	{
+		"_id" : ObjectId("604a65c63918215ca022eee5"),
+		"name" : "Alexis Bohed",
+		"age" : 35
+	},
+	{
+		"_id" : ObjectId("604a65c63918215ca022eee6"),
+		"name" : "Melanie Palace",
+		"age" : 27
+	},
+	{
+		"_id" : ObjectId("604a65c63918215ca022eee7"),
+		"name" : "Armin Glutch",
+		"age" : 35
+	},
+	{
+		"_id" : ObjectId("604a65c63918215ca022eee8"),
+		"name" : "Klaus Arber",
+		"age" : 53
+	},
+	{
+		"_id" : ObjectId("604a65c63918215ca022eee9"),
+		"name" : "Albert Twostone",
+		"age" : 68
+	},
+	{
+		"_id" : ObjectId("604a65c63918215ca022eeea"),
+		"name" : "Gordon Black",
+		"age" : 38
+	}
+]
+```
+
+> Notice that now _all the documents_ that match the `find()` condition are returned here in an array.
+
+### Cursor Functions - `forEach()`
+
+In the "real world", a more practical way of handling the result set may be to invoke the `db.collection.find().forEach()` function. Since the `mongo` shell is based on JavaScript, working with the `forEach()` function in the mongo shell uses the same syntax as the `forEach()` function called upon arrays in JavaScript.
+
+> The next example is going to follow the syntax used in the `mongo` shell (e.g. JavaScript syntax), while syntax may very depending on the environment (Python, C#, etc.), the concept will be very similar.
+
+Since the `mongo` shell uses the same syntax as JavaScript, it is not just valid to define and execute an inline or anonymous function - it is expected.
+
+#### Syntax: `forEach()
+
+The `forEach()` function will provide the parameter function (aka "inline" or "anonymous" function) with a variable representing each individual document. Then the function will be invoked asynchronously, passing in each document and invoking the function.
+
+Designed to support this functionality, the `mongo` shell offers a helper function `printJson()` which prints a document (the parameter) in JSON format. So the results as JSON using the `forEach()` function would follow the general format:
+
+```
+db.collection.find().forEach((itemInCollection) => { printJson(itemInCollection) */})
+```
+
+> This is essentially what happens by default when you invoke the `find()` command - except that it paginates the results in groups of 20 document (by default)
