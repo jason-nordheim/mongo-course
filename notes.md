@@ -424,7 +424,9 @@ db.collection.delete(filter, options)
   - `filter` specifies the match conditions for the documents to be deleted.
   - `options` - ???
 
-**Important** - using `db.collection.deleteMany({})` will delete all records in the collection. Passing an empty object as the filter is similar to wild-carding with `*` in SQL, it specifies that we want to match everything.
+#### Deleting Every Document in a Collection
+
+Its important to note using `db.collection.deleteMany({})` will delete all records in the collection. Passing an empty object as the filter is similar to wild-carding with `*` in SQL, it specifies that we want to match everything.
 
 ### Filters
 
@@ -436,14 +438,43 @@ So if we have a collection called `flights`, we can view all the documents in th
 
 Command:
 
-```js
+```
 db.flights.find().pretty();
 ```
 
 Output:
 
-```js
+```
 {
+	"_id" : ObjectId("6047ee28c39b55b0ea6cb0d7"),
+	"departureAirport" : "MUC",
+	"arrivalAirport" : "SFO",
+	"aircraft" : "Airbus A380",
+	"distance" : 12000,
+	"intercontinental" : true
+}
+{
+	"_id" : ObjectId("6047ee48c39b55b0ea6cb0d8"),
+	"departureAirport" : "LHR",
+	"arrivalAirport" : "TXL",
+	"aircraft" : "Airbus A320",
+	"distance" : 950,
+	"intercontinental" : false
+}
+{
+	"_id" : ObjectId("604a5b612b6c12ccca9f4c32"),
+	"departureAirport" : "MUC",
+	"arrivalAirport" : "SFO",
+	"aircraft" : "Airbus A380",
+	"distance" : 12000,
+	"intercontinental" : true
+}
+{
+	"_id" : ObjectId("604a5b612b6c12ccca9f4c33"),
+	"departureAirport" : "LHR",
+	"arrivalAirport" : "TXL",
+	"aircraft" : "Airbus A320",
+	"distance" : 950,
 }
 ```
 
