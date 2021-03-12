@@ -911,3 +911,134 @@ db.collection.find().forEach((itemInCollection) => { printJson(itemInCollection)
 ```
 
 > This is essentially what happens by default when you invoke the `find()` command - except that it paginates the results in groups of 20 document (by default)
+
+## Working with Documents
+
+Initially the amount of data contained in the results of a `find()` operation are small, but as the number of documents, as well as the size of each of those documents increases, these operations can get increasingly demanding and more consideration must be given to the queries. As such understanding how documents work in MongoDB, as well as how we can transform our results becomes increasingly essential.
+
+### Projections
+
+Arguably the biggest challenges in the web and mobile development arena pertain to bandwidth: as such tools like tree shaking, code-bundling/minification, and compression algorithms are used to reduce the amount of data an application needs to send over the wire.
+
+With a **Projection**, the documents returned from `find()` or `findOne()` can be stripped of any extraneous information, With small documents (e.g. few fields, no nested documents, etc.) - projection may have little impact, but as documents increase in size, using projections can dramatically reduce the amount of data returned from queries to MongoDB resulting in faster applications operating with greater efficiency.
+
+#### Reviewing the Passengers Collection
+
+Recall, using the `find()` function to query the `passengers` collection returns a _cursor_, enabling data mutation and pagination of the query results:
+
+> Reload the data set using the [passengers.json](/data/02-passengers.json) file if needed.
+
+Command:
+
+```
+db.passengers.find()
+```
+
+Output:
+
+```
+{ "_id" : ObjectId("604a65c63918215ca022eed6"), "name" : "Max Schwarzmueller", "age" : 29 }
+{ "_id" : ObjectId("604a65c63918215ca022eed7"), "name" : "Manu Lorenz", "age" : 30 }
+{ "_id" : ObjectId("604a65c63918215ca022eed8"), "name" : "Chris Hayton", "age" : 35 }
+{ "_id" : ObjectId("604a65c63918215ca022eed9"), "name" : "Sandeep Kumar", "age" : 28 }
+{ "_id" : ObjectId("604a65c63918215ca022eeda"), "name" : "Maria Jones", "age" : 30 }
+{ "_id" : ObjectId("604a65c63918215ca022eedb"), "name" : "Alexandra Maier", "age" : 27 }
+{ "_id" : ObjectId("604a65c63918215ca022eedc"), "name" : "Dr. Phil Evans", "age" : 47 }
+{ "_id" : ObjectId("604a65c63918215ca022eedd"), "name" : "Sandra Brugge", "age" : 33 }
+{ "_id" : ObjectId("604a65c63918215ca022eede"), "name" : "Elisabeth Mayr", "age" : 29 }
+{ "_id" : ObjectId("604a65c63918215ca022eedf"), "name" : "Frank Cube", "age" : 41 }
+{ "_id" : ObjectId("604a65c63918215ca022eee0"), "name" : "Karandeep Alun", "age" : 48 }
+{ "_id" : ObjectId("604a65c63918215ca022eee1"), "name" : "Michaela Drayer", "age" : 39 }
+{ "_id" : ObjectId("604a65c63918215ca022eee2"), "name" : "Bernd Hoftstadt", "age" : 22 }
+{ "_id" : ObjectId("604a65c63918215ca022eee3"), "name" : "Scott Tolib", "age" : 44 }
+{ "_id" : ObjectId("604a65c63918215ca022eee4"), "name" : "Freddy Melver", "age" : 41 }
+{ "_id" : ObjectId("604a65c63918215ca022eee5"), "name" : "Alexis Bohed", "age" : 35 }
+{ "_id" : ObjectId("604a65c63918215ca022eee6"), "name" : "Melanie Palace", "age" : 27 }
+{ "_id" : ObjectId("604a65c63918215ca022eee7"), "name" : "Armin Glutch", "age" : 35 }
+{ "_id" : ObjectId("604a65c63918215ca022eee8"), "name" : "Klaus Arber", "age" : 53 }
+{ "_id" : ObjectId("604a65c63918215ca022eee9"), "name" : "Albert Twostone", "age" : 68 }
+```
+
+**Takeaway** - Projections help avoid wasted bandwidth by limiting the fields/properties returned in each document as a result of query to MongoDB.
+
+#### Projecting on the Passenger Collection
+
+In order to perform a _projection_ operation, we will need to pass a filter argument. Passing the `filter` argument is required because without a `filter` argument, the `options` argument cannot be defiend. Since we still want to return all documents, we can wildcard the `filter` argument using an empty object/document: `{}`.
+
+With a `filter` defined, a second argument (the `options` argument) can be defined as the second parameter to the `find()` command. The `options` argument is another document/object with keys that match the property names of the documents, along with an associated numeric value: `1` indicating that that field should be returned - conversely you can explicitely _exclude_ fields/properties by specifying the document/object key as with the name (the same as _include_), but assigning an assocaited value of `0` (indicating the field should be excluded).
+
+Example: Get all the `name`s of passengers contained within the `passengers` collection:
+
+Command:
+
+```
+db.passengers.find({}, { name: 1})
+```
+
+Output:
+
+```
+{ "_id" : ObjectId("604a65c63918215ca022eed6"), "name" : "Max Schwarzmueller" }
+{ "_id" : ObjectId("604a65c63918215ca022eed7"), "name" : "Manu Lorenz" }
+{ "_id" : ObjectId("604a65c63918215ca022eed8"), "name" : "Chris Hayton" }
+{ "_id" : ObjectId("604a65c63918215ca022eed9"), "name" : "Sandeep Kumar" }
+{ "_id" : ObjectId("604a65c63918215ca022eeda"), "name" : "Maria Jones" }
+{ "_id" : ObjectId("604a65c63918215ca022eedb"), "name" : "Alexandra Maier" }
+{ "_id" : ObjectId("604a65c63918215ca022eedc"), "name" : "Dr. Phil Evans" }
+{ "_id" : ObjectId("604a65c63918215ca022eedd"), "name" : "Sandra Brugge" }
+{ "_id" : ObjectId("604a65c63918215ca022eede"), "name" : "Elisabeth Mayr" }
+{ "_id" : ObjectId("604a65c63918215ca022eedf"), "name" : "Frank Cube" }
+{ "_id" : ObjectId("604a65c63918215ca022eee0"), "name" : "Karandeep Alun" }
+{ "_id" : ObjectId("604a65c63918215ca022eee1"), "name" : "Michaela Drayer" }
+{ "_id" : ObjectId("604a65c63918215ca022eee2"), "name" : "Bernd Hoftstadt" }
+{ "_id" : ObjectId("604a65c63918215ca022eee3"), "name" : "Scott Tolib" }
+{ "_id" : ObjectId("604a65c63918215ca022eee4"), "name" : "Freddy Melver" }
+{ "_id" : ObjectId("604a65c63918215ca022eee5"), "name" : "Alexis Bohed" }
+{ "_id" : ObjectId("604a65c63918215ca022eee6"), "name" : "Melanie Palace" }
+{ "_id" : ObjectId("604a65c63918215ca022eee7"), "name" : "Armin Glutch" }
+{ "_id" : ObjectId("604a65c63918215ca022eee8"), "name" : "Klaus Arber" }
+{ "_id" : ObjectId("604a65c63918215ca022eee9"), "name" : "Albert Twostone" }
+Type "it" for more
+```
+
+It is important to note that all the fields/properties are still there, the _projection_ operation doesn't actual mutate the value of the documents in the collection, just returns a partial document (as specified in the `options` parameter).
+
+The results of `db.passengers.find({}, { name: 1})` returned documents including two (2) fields: `_id` and `name` - but only `name` was specified in the `options` argument of the `find()` operation (the _projection_). By default, MongoDB will _always return the `_id` property of projections_.
+
+In order to exclude the `_id` property from the result-set requires explicitely defining that the property be excluded:
+
+**Command** - Query all the `passengers` documents, and return _just_ the `name` field
+
+```
+db.passengers.find({}, { name: 1, _id: 0})
+```
+
+**Output:**
+
+```
+{ "name" : "Max Schwarzmueller" }
+{ "name" : "Manu Lorenz" }
+{ "name" : "Chris Hayton" }
+{ "name" : "Sandeep Kumar" }
+{ "name" : "Maria Jones" }
+{ "name" : "Alexandra Maier" }
+{ "name" : "Dr. Phil Evans" }
+{ "name" : "Sandra Brugge" }
+{ "name" : "Elisabeth Mayr" }
+{ "name" : "Frank Cube" }
+{ "name" : "Karandeep Alun" }
+{ "name" : "Michaela Drayer" }
+{ "name" : "Bernd Hoftstadt" }
+{ "name" : "Scott Tolib" }
+{ "name" : "Freddy Melver" }
+{ "name" : "Alexis Bohed" }
+{ "name" : "Melanie Palace" }
+{ "name" : "Armin Glutch" }
+{ "name" : "Klaus Arber" }
+{ "name" : "Albert Twostone" }
+Type "it" for more
+```
+
+> The `_id` field is the only field that requires _explicit exclusion from projections_. Any other fields not _included_ in the `options` argument will be excluded by default.
+
+Since MongoDB documents support **up to 100 levels of nested documents** - _projections_ increase in utility as documents increase in size or in scenarios where there are multiple levels of nesting contained within each document. The only other restriction MongoDB places on documents is that they must be less than `16mb` in size (which is substantial considering documents only text).
