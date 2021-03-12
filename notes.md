@@ -912,7 +912,7 @@ db.collection.find().forEach((itemInCollection) => { printJson(itemInCollection)
 
 > This is essentially what happens by default when you invoke the `find()` command - except that it paginates the results in groups of 20 document (by default)
 
-## Working with Documents
+## Working MongoDB Documents
 
 Initially the amount of data contained in the results of a `find()` operation are small, but as the number of documents, as well as the size of each of those documents increases, these operations can get increasingly demanding and more consideration must be given to the queries. As such understanding how documents work in MongoDB, as well as how we can transform our results becomes increasingly essential.
 
@@ -1040,5 +1040,161 @@ Type "it" for more
 ```
 
 > The `_id` field is the only field that requires _explicit exclusion from projections_. Any other fields not _included_ in the `options` argument will be excluded by default.
+
+### Working with Nested Documents
+
+In order to see how _document nesting works in Mongo_, let's use the `updateMany()` function to nest a document to the `flights` collection:
+
+**Command** - Add a nested document to all documents in the `flight` collection under `status`. The nested `status` document should have a `description` and a `lastUpdated` property:
+
+```
+db.flights.updateMany({},{$set:{ status:{ description:"on-time",lastUpdate:"1 hour ago"}}})
+```
+
+**Output**
+
+```
+{ "acknowledged" : true, "matchedCount" : 4, "modifiedCount" : 4 }
+```
+
+> The term "nested document" is often used interchangeable with the term "embedded document" in reference to documents contained within documents.
+
+As a result of the `updateMany()` operation, every document in the `flights` collection should have a new property/field with a key of `status` and an associated value of another document. The documents in the flights collection now have `1` level of nesting.
+
+We could _nest_ or _embedd_ another docuent within the `status` document to create a second level of nesting. In MongoDB, documents can be nested up to 100 levels, or until a document reaches 16 mb in size.
+
+#### Nested documnet takeaways:
+
+- the `$set` _atomic operator_ was used to indicate that the desired result is to "set" a key-value pair for the matching documents
+- the `filter` paramete of `{}` was used to wild-card the query of documents upon which `updateMany()` was mutating.
+- successful execution produces output indicating `"acknowledged": true` and both the `"matchCount"` as well as the `"modifiedCount"` should have a corresponding value indicating the records matched and mutated.
+- MongoDB supports multi-level nesting, in which documents are contained within documents.
+
+### Document Arrays
+
+Arrays are commonly used data strutures to contain lists of values. In MongoDB, and data that can be placed in a document, can also be placed in an array. In other words, Arrays in MongoDB can contain primitive data types (string, number, boolean, etc.), or entire documents (e.g. objects).
+
+#### Demo - Working with Arrays
+
+Let's (once again) use the _atomic function_ `$set` to embed an array of strings defining some hobbies for the passenger `"Albert Twostone"` in the `passengers` collection.
+
+**Command**
+
+```
+db.passengers.updateOne({ name: "Albert Twostone"}, { $set: {hobbies: ["Running", "Photography", "Cooking"]}})
+```
+
+**Output**
+
+```
+{ "acknowledged" : true, "matchedCount" : 1, "modifiedCount" : 1 }
+```
+
+Executing the `find()` operation on the `passengers` collection should now show `"Albert Twostone"` having a property of `"hobbies"` which is associated with an array of strings:
+
+**Command:**
+
+```
+db.passengers.find({ name: "Albert Twostone"}).pretty()
+```
+
+**Output:**
+
+```
+{
+	"_id" : ObjectId("604a65c63918215ca022eee9"),
+	"name" : "Albert Twostone",
+	"age" : 68,
+	"hobbies" : [
+		"Running",
+		"Photography",
+		"Cooking"
+	]
+}
+```
+
+#### Accessing specific nested data
+
+MongoDB allows you to directly query properties of a single document, we can use dot notation following the `findOne()` function to define the desired property MongoDB should return values for:
+
+**Command:**
+
+```
+db.passengers.findOne({ name: "Albert Twostone"}).hobbies
+```
+
+**Output:**
+
+```
+[ "Running", "Photography", "Cooking" ]
+```
+
+#### Querying nested properties of arrays
+
+In MongoDB retrieving documents by matching a value contained with an array leverages the `find()` and `findOne()` query functions, and is syntactically very similar to the querying other document fields/properties.
+
+Imagine that other passengers also had `hobbies`. It might be useful to query all the people with a particular hobby.
+
+**Command** - Query all `passengers` documents whose hobbies include `"Running"`:
+
+```
+db.passengers.find({ hobbies: "Running" }).pretty()
+```
+
+**Output**
+
+```
+{
+	"_id" : ObjectId("604a65c63918215ca022eee9"),
+	"name" : "Albert Twostone",
+	"age" : 68,
+	"hobbies" : [
+		"Running",
+		"Photography",
+		"Cooking"
+	]
+}
+```
+
+> Since `"Albert Twostone"` is the only `passenges` document that has a the property of `hobbies` defined, there is only one result. However, if we queried a hobby that was not in the array of values for `"Albert Twostone"`, no results would be returned (unless other documents had matching values in the array associated with`hobbies`). So invoking `> db.passengers.find({ hobbies: "Surfing" })` would return no results.
+
+> When using `find()` on arrays, simply specifying the desired value will match any document that has that value present within the array of the specified property.
+
+#### Querying documents based on nested document values
+
+Another intermediate form of querying in MongoDB could be to query documents based on properties of nested or embeded documents. In MongoDB, querying the nested documents involves specifying the field, then placing a period (`.`), followed by the nested document - within qoutes (`""`) for `field.subField` as the key in the `filter` parameter provided to the `find()` or `findOne()` function, along with the desired value assciated:
+
+**Find Nested Document Query Syntax:**
+
+```
+db.collection.find({ "field.subField": "desiredValue" })
+```
+
+**FindOne Nested Document Query Syntax:**
+
+```
+db.collection.findOne({ "field.subField": "desiredValue" })
+```
+
+#### Example: Querying embeded documents
+
+**Command** - Find all the documents from the `flights` collection that are `"on-time"`
+
+```
+db.flights.find({ "status.description": "on-time" })
+```
+
+**Output**
+
+```
+{ "_id" : ObjectId("6047ee28c39b55b0ea6cb0d7"), "departureAirport" : "MUC", "arrivalAirport" : "SFO", "aircraft" : "Airbus A380", "distance" : 12000, "intercontinental" : true, "status" : { "description" : "on-time", "lastUpdate" : "1 hour ago" } }
+{ "_id" : ObjectId("6047ee48c39b55b0ea6cb0d8"), "departureAirport" : "LHR", "arrivalAirport" : "TXL", "aircraft" : "Airbus A320", "distance" : 950, "intercontinental" : false, "status" : { "description" : "on-time", "lastUpdate" : "1 hour ago" } }
+{ "_id" : ObjectId("604a5b612b6c12ccca9f4c32"), "departureAirport" : "MUC", "arrivalAirport" : "SFO", "aircraft" : "Airbus A380", "distance" : 12000, "intercontinental" : true, "status" : { "description" : "on-time", "lastUpdate" : "1 hour ago" } }
+{ "_id" : ObjectId("604a5b612b6c12ccca9f4c33"), "departureAirport" : "LHR", "arrivalAirport" : "TXL", "aircraft" : "Airbus A320", "distance" : 950, "intercontinental" : false, "status" : { "description" : "on-time", "lastUpdate" : "1 hour ago" } }
+```
+
+> Recall: The `pretty()` can be invoked to the `find()` command to make the output more readable
+
+### Summary
 
 Since MongoDB documents support **up to 100 levels of nested documents** - _projections_ increase in utility as documents increase in size or in scenarios where there are multiple levels of nesting contained within each document. The only other restriction MongoDB places on documents is that they must be less than `16mb` in size (which is substantial considering documents only text).
