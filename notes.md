@@ -99,24 +99,144 @@ Once in the Mongo CLI, we can see the existing databases using the command: `sho
 
 #### Selecting a database
 
-The `use <database-name>` command defines the target database in Mongo CLI. It is important to note, calling the `use` command will create the database if it does not already exist. So the `use` command is inherently multipurpose. If executed with a database that already exists, the `use` command will specify which database inserts, queries and updates occur on, but if the the `use` command is followed by the name of a database that does _not_ already exist - the database will be created and selected as the target database.
+The first thing we need to do in the MongoDB shell is to select a database that we want to work with. We use the `show dbs` command to print out the local database names to the console.
 
-**Command** Select (or create) a database
+**Command** - Show local databases
 
-```sh
+```
+show dbs
+```
+
+**Output** - Lists each available database on a new line
+
+```
+admin    0.000GB
+config   0.000GB
+flights  0.000GB
+local    0.000GB
+shop     0.000GB
+```
+
+> This is the output from my machine at time of draft. This will differ depending on the databases existing on the local system.
+
+Once we know what databases exist on the local instance of MongoDB, we can use the `use` command to specify which of the existing databases we would like to work with. If we specify a database that does _not_ exist on the local instance of MongoDB, the `use` command will create a database with the provided name _and_ select it as the target database.
+
+**Syntax**: Selecting Target database
+
+General Syntax: `<database-name>`is the name of the desired or target database
+
+```
 use <database-name>
 ```
 
+**Example**: select (or create) a database on the local MongoDB server named `flights`
+
+```
+use flights
+```
+
+**Success Message**:
+
+```
+switched to db flights
+```
+
+**Additional Details**:
+
+- executing `use <database-name>` tells the Mongo shell which database should be used to run future queries/commands
+- the currently selected database is always aliased as `db`
+- commands are called on the `db` object using JavaScript-like syntax
+
+#### Dropping a database
+
+In order to remove a MongoDB database instance from the local server, we first need to leverage the `use` command to select and target the database we want to perform the `drop` operation.
+
+**Command** - Select a database to be removed
+
+```
+use <database>
+```
+
+**Example** - Select `shop` database
+
+```
+use shop
+```
+
+**Example Output** (success)
+
+```
+switched to db shop
+```
+
+Now that `db` represents the `shop` database, we can delete or "drop" that database from the local MongoDB server using the `dropDatabase()` function:
+
+**Command** Drop current database
+
+```
+db.dropDatabase();
+```
+
+**Example Output** - Dropping the `shop` database
+
+```
+{ "dropped" : "shop", "ok" : 1 }
+```
+
+> In this scenario the example, as well as the general syntax is the same. Just use care when executing the `dropDatabase()` function since this action cannot be undone.
+
 #### Working with collections
 
-Once the `use` command is invoked, the Mongo CLI will represent the selected database as `db`.
-Referencing collections within the selected database uses the syntax: `db.collection` (dot notation).
+**Remember**
+
+- Once the `use` command is invoked, the Mongo CLI will represent the selected database as `db`.
+- Referencing collections within the selected database uses the syntax: `db.collection` (dot notation).
 
 MongoDB is designed with "lazy initialization", which means that:
 
-1. Collections do not exist until a record is created within that collection. - Documents **cannot** exist outside of collections.
+1. Collections do not exist until a record is created within that collection.
+   - Documents **cannot** exist outside of collections.
 2. Documents (records) cannot be directly inserted into a database.
 3. If creating a document in a collection that does not already exist, the Mongo CLI will automatically generate the collection as part of the insert/create operation.
+
+What does this mean? ... well, in order to create a collection, we need to also insert a document into that collection.
+
+The next section cover's inserting documents into a collection, so we won't cover that here, but if you ever need to _reset_ a database, it may be useful to simple remove (and then recreate) a collection.
+
+#### Viewing Collections
+
+Once a database has been selected using `use <database>`, the `show collections` command (notice there are no parenthesis), can be used to print the names of the collections in the database targeted by the previous `use <database>` command.
+
+**Command** - Show existing collections in selected database
+
+```
+show collections
+```
+
+**\*Example Output**
+
+```
+flights
+passengers
+```
+
+> Above is output following the completion of the CRUD operations outlined below in which the `flights` database is created and documents are inserted into `flights` and `passengers` collections.
+
+#### Deleting Collections:
+
+In the MongoDB shell, we use the call the `drop()` function on a collection to "drop" or "delete" the collection from the database.
+
+**Command/Syntax**
+
+```
+`db.collection.drop()`
+```
+
+**Command Example**
+
+```
+db.flight.drop()
+```
 
 ### Inserting Documents (Create)
 
