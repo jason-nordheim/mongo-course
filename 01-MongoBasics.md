@@ -44,11 +44,11 @@ The MongoDB Ecosystem
   - Database triggers
   - Real-time Sync
 
-## MongoDB Basics
+## MongoDB Shell
 
 The most straight-forward way to get started working with data in MongoDB is via the _MongoDB CLI_ also referred to as the "mongo shell". The shell or CLI is a text-based REPL (Read, evaluate, print, loop) that is used to directly query and manage databases, collections, and documents within MongoDB.
 
-### Starting the Mongo CLI (shell)
+### Access and Configuration
 
 Before we can start working with the our MongoDB database, we need to make sure the process is running. Assuming the shell path is correctly linked to the install directory containing the MongoDB executables, the command `mongod` should start the background process.
 
@@ -89,37 +89,37 @@ Implicit session: session { "id" : UUID("81cd403b-b691-435d-8e2d-c9fd1291b964") 
 MongoDB server version: 4.4.3
 ```
 
-### Working with Databases via the CLI
+### Databases
 
-Once in the Mongo CLI, we can see the existing databases using the command: `show dbs`. Out of the box, MongoDB will come pre-configure 3 databases:
+In MongoDB, databases hold one or more collections of documents.
 
-1. admin
-2. config
-3. local
+Once in the , we can see the existing databases using the command:
 
-#### Selecting a database
-
-The first thing we need to do in the MongoDB shell is to select a database that we want to work with. We use the `show dbs` command to print out the local database names to the console.
-
-**Command** - Show local databases
+**Command** Print existing databases:
 
 ```
 show dbs
 ```
 
-**Output** - Lists each available database on a new line
+**Output** (success)
 
 ```
-admin    0.000GB
-config   0.000GB
-flights  0.000GB
-local    0.000GB
-shop     0.000GB
+admin       0.000GB
+config      0.000GB
+local       0.000GB
 ```
+
+> Fresh installations of MongoDB will come pre-configure 3 databases: `admin`, `config`, and `local`
 
 > This is the output from my machine at time of draft. This will differ depending on the databases existing on the local system.
 
-Once we know what databases exist on the local instance of MongoDB, we can use the `use` command to specify which of the existing databases we would like to work with. If we specify a database that does _not_ exist on the local instance of MongoDB, the `use` command will create a database with the provided name _and_ select it as the target database.
+#### Create or Select a database
+
+In the MongoDB shell the `use <database>` is used to **both** create a database and select it.
+
+However if a database with the provided name (`<database>` ) already exists, the `use` command will simply select the associated database as the target database.
+
+Once selected, all future commands are invoked using the syntax: `db.collection.command`
 
 **Syntax**: Selecting Target database
 
@@ -142,10 +142,6 @@ switched to db flights
 ```
 
 **Additional Details**:
-
-- executing `use <database-name>` tells the Mongo shell which database should be used to run future queries/commands
-- the currently selected database is always aliased as `db`
-- commands are called on the `db` object using JavaScript-like syntax
 
 #### Dropping a database
 
@@ -185,23 +181,65 @@ db.dropDatabase();
 
 > In this scenario the example, as well as the general syntax is the same. Just use care when executing the `dropDatabase()` function since this action cannot be undone.
 
-#### Working with collections
+### Collections
+
+Collections are analogous to tables in relational databases.
+
+If a collection does not exist, MongoDB creates the collection when you first store data for that collection.
+
+As a result invoking `insertOne()`, `insert()` or `createIndex()` will create a collection **and** insert the parameterized documents:
+
+Example: _Implicit Collection Creation_
+
+- Description: Insert a document into a collection named `cars` with the following information:
+  - make = `"Acura"`
+  - model = `"TL"`
+  - year = `2001`
+  - miles = `123000`
+- Syntax: `db.collection.insertOne(<data>, <options>)`
+- Input Command:
+  ```
+  db.cars.insertOne({
+      make: "Acura",
+      model: "TL",
+      year: 2000,
+      miles: 123000
+      })
+  ```
+- Success Ouput:
+  ```
+  {
+      "acknowledged" : true,
+      "insertedId" : ObjectId("604fce7aacfb0f7c61bbfe3c")
+  }
+  ```
+
+Example _Explicit Collection Creation_
+
+    - Description: Create a collection called `'users'`
+    - Syntax: `db.createCollection( <name>, <options>)`
+    - Input Command:
+        ```
+        db.createCollection("users")
+        ```
+    - Success Output:
+        ```
+        { "ok" : 1 }
+        ```
 
 **Remember**
 
 - Once the `use` command is invoked, the Mongo CLI will represent the selected database as `db`.
 - Referencing collections within the selected database uses the syntax: `db.collection` (dot notation).
 
+### Lazy Database & Collection Initialization
+
 MongoDB is designed with "lazy initialization", which means that:
 
-1. Collections do not exist until a record is created within that collection.
+1. Database and collections do not exist until a record is created within that collection.
    - Documents **cannot** exist outside of collections.
 2. Documents (records) cannot be directly inserted into a database.
 3. If creating a document in a collection that does not already exist, the Mongo CLI will automatically generate the collection as part of the insert/create operation.
-
-What does this mean? ... well, in order to create a collection, we need to also insert a document into that collection.
-
-The next section cover's inserting documents into a collection, so we won't cover that here, but if you ever need to _reset_ a database, it may be useful to simple remove (and then recreate) a collection.
 
 #### Viewing Collections
 
