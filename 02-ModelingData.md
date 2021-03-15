@@ -86,7 +86,7 @@ db.collection.updateOne( { _id: 10 },
 
 > Although the `NumberLong()` constructor accepts integer values from the mongo shell (i.e. without quotes), this is not recommended. Specifying an integer value larger than JavaScript’s defined `Number.MAX_SAFE_INTEGER `may lead to unexpected behavior.
 
-### NumberInt
+#### NumberInt
 
 The mongo shell provides the `NumberInt()` constructor to explicitly specify 32-bit integers.
 
@@ -118,7 +118,7 @@ Verification:
 }
 ```
 
-### Number - `NumberDecimal`
+#### Number - `NumberDecimal`
 
 The mongo shell provides the `NumberDecimal()` constructor to explicitly specify **128-bit decimal-based floating-point** values capable of emulating decimal rounding with exact precision. This functionality is intended for applications that handle monetary data, such as financial, tax, and scientific computations.
 
@@ -159,23 +159,84 @@ Output:
 
 > The decimal BSON type uses the IEEE 754 decimal128 floating-point numbering format which supports 34 decimal digits (i.e. significant digits) and an exponent range of −6143 to +6144.
 
-Relevant Operators for Numbers
+#### Relevant Operators for Numbers
 
 - `$inc` - can be used to increment the value of a `NumberLong`
 - `$set` - can be used to change/assign a value to a document
 
-### Dates
+#### Sorting & Equality of Numbers
 
-#### Description
+Values of `decimal` types are compared/sorted based on their actual numeric value.
+
+As a result, values of type `double` may have an _approximately_ "equal" representation, but differ in their `decimal` representation will be considered **unequal**.
+
+Example:
+
+- Task: Use the `insertMany()` function to create a five (`5`) documents in a collection called `numbers`
+- Details
+  - Each document an `_id` property starting with `1` for the first record, and incrementing to `5`.
+  - Each document should have a `val` property:
+    - The first (`1`) document: `val: NumberDecimal("9.99")` _explicit decimal_
+    - The second (`2`) document `val: 9.99` - _implicit decimal_
+    - The third (`3`) document `val: 10` - _implicit integer_
+    - The fourth (`4`) document `val: NumberLong("10")` _explicit long integer_
+    - The fifth (`5`) document `val: NumberDecimal("10.0")` - _explicit decimal_
+  - Each document should also have an `val` property in which a number is associated.
+
+Example Insert:
+
+```
+db.numbers.insertMany([
+    { "_id" : 1, "val" : NumberDecimal( "9.99" ) },
+    { "_id" : 2, "val" : 9.99 },
+    { "_id" : 3, "val" : 10, },
+    { "_id" : 4, "val" : NumberLong("10")},
+    { "_id" : 5, "val" : NumberDecimal( "10.0" ) },
+    ])
+```
+
+Successful execution should produce the output:
+
+```
+{ "acknowledged" : true, "insertedIds" : [ 1, 2, 3, 4, 5 ] }
+```
+
+Exercises: Execute the following queries below using the `find()` function below. Note which documents are returned from each query:
+
+1. Query `numbers` for documents with a `val` matching the _implicit double_ `9.99`
+
+   - Query: `db.numbers.find({ val: 9.99 })`
+   - Output: `{ "_id" : 2, "val" : 9.99 }`
+   - Understanding Check: Why isn't the document of `_id: 1` returned?
+
+2. Query `numbers` for documents with a `val` matching the _explicit double_ of `9.99`:
+
+   - Query: `db.numbers.find({ val: NumberDecimal('9.99')})`
+   - Output: `{ "_id" : 1, "val" : NumberDecimal("9.99") }`
+   - Understanding Check: Why isn't the document of `_id: 2` returned?
+
+> _Double_ value types are **excluded** because their values do not match teh _decimal_ representation of `9.99`
+
+3. Search `numbers` for that have an _implicit_ value of `10`.
+
+   - Query: `db.numbers.find({ val: 10 })`
+   - Output:
+     ```
+     { "_id" : 3, "val" : 10 }
+     { "_id" : 4, "val" : NumberLong(10) }
+     { "_id" : 5, "val" : NumberDecimal("10.0") }
+     ```
+   - Understanding Check: Why are documents with `NumberLong("10")` and `NumberDecimal("10")` values returned in addition to documents where `val` is defined _implicitly_ as `10`?
+
+Query: `db.numbers.find({ val: NumberDecimal( “10” ) })`
+
+- should match `3` documents ( ids: `3`, `4`, and `5`)
+
+### Dates
 
 The mongo shell provides various methods to return the date, either as a string or as a `Date` object. The mongo shell wraps objects of `Date` type with the `ISODate` helper; however, the objects remain of type `Date`. As a result you can declare date values using `new Date()` or `new ISODate()` with the same result.
 
 #### Syntax:
-
-#### Limitations
-
-- Internally, Date objects are stored as a signed 64-bit integer representing the number of milliseconds since the Unix epoch (Jan 1, 1970).
-- Not all database operations and drivers support the full 64-bit range. You may safely work with dates with years within the inclusive range 0 through 9999.
 
 ISODate
 
@@ -203,6 +264,11 @@ ISODate
 - Syntax: `Timestamp(11421532)`
 - Details:
   - Guaranteed to be unique, even documents created in th same command will have slightly different timestamps by leveraging an ordinal value.
+
+#### Limitations
+
+- Internally, Date objects are stored as a signed 64-bit integer representing the number of milliseconds since the Unix epoch (Jan 1, 1970).
+- Not all database operations and drivers support the full 64-bit range. You may safely work with dates with years within the inclusive range 0 through 9999.
 
 ### Embedded Documents
 
