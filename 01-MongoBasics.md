@@ -185,6 +185,10 @@ db.dropDatabase();
 
 Collections are analogous to tables in relational databases.
 
+By default, a collection does not require its documents to have the same schema; i.e. the documents in a single collection do not need to have the same set of fields and the data type for a field can differ across documents within a collection.
+
+Starting in MongoDB 3.2, however, you can enforce document [validation rules](https://docs.mongodb.com/manual/core/schema-validation/) for a collection during update and insert operations. See Schema Validation for details.
+
 If a collection does not exist, MongoDB creates the collection when you first store data for that collection.
 
 As a result invoking `insertOne()`, `insert()` or `createIndex()` will create a collection **and** insert the parameterized documents:
